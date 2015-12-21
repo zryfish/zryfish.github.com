@@ -9,12 +9,12 @@ title:               知与谁同
 tagline:             '一个人的博客'
 description:         ''
 url:                 http://zryfish.github.io
-baseurl:             ''
+baseurl:             'http://zryfish.github.io'
 paginate:            5
 
 # About/contact
 author:
-  name:              zryfishj
+  name:              zryfish
   url:               https://twitter.com/zryfish
   email:             zw0948@gmail.com
 
