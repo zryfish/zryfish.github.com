@@ -19,13 +19,14 @@ mail.GetItemValue(MAIL_SUBJECT, (LMBCS*)szSubject, sizeof(szSubject));
 
 这段代码看起来没有什么问题。查了内部实现之后，其实里面是使用类似`char * strncpy ( char * destination, const char * source, size_t num )`的函数来拷贝邮件标题，`strncpy`中`n`指的是拷贝的字节(char)数。而在`LMBCS`编码中并不是一个char就表示一个字符，`LMBCS`可以是一个、两个、甚至是三个字节来表示一个字符。譬如说，邮件标题是_我欲乘风归去_，在`LMBCS`假如表示为`3A 3D 4F 13 20 01 8A 45 91 2A 0C 02 05 25 64`，如果`strncpy(source, dest, 14)`就会造成最后一个字符_`去`_在拷贝时被截断，`05 25 64`变成`05 25`，对于程序来说事无法用这么一段不完整的编码来解析的。这个问题不仅是Notes会遇到，任何使用多字节编码的程序都会遇到[链接](http://stackoverflow.com/questions/7344683/utf8-aware-strncpy)，解决方法拷贝时确保剩下的空间足够拷贝一个字符，不足则不拷贝。也有现成的方法可以使用，如[gutf8.c](http://web.mit.edu/ghudson/dev/nokrb/third/glib2/glib/gutf8.c)。
 
-**2. 文件保存**
+**2. 文件保存**  
 如果希望浏览器弹出'另存为...'的文件保存窗口，可以在HTTP response中设置，如果文件名存在空格，则需要将文件名用双引号扩起来[链接](https://tools.ietf.org/html/rfc5987)
-``` 
+
+``` html
 Content-Disposition: Attachment; filename=example.html
 ```
 
-```
+``` html
 Content-Disposition: Attachment; filename="an example.html"
 ```
 
@@ -41,12 +42,12 @@ Content-Disposition: attachment;
 
 但是在浏览器测试这种做法的时候，我发现Chrome浏览器并不总是能弹出文件保存窗口，而Firefox和IE 11却没有任何问题。打开调试窗口发现，请求返回时浏览器会有`err_response_headers_multiple_content_disposition`错误，这表示浏览器接收到了重复的Cotent-Disposition header，而Chrome为了防止HTTP response split attack(不知所云)是不允许这样做的，结果就是报错。
 
->  Duplicate headers received from server
->  The response from the server contained duplicate headers. This problem is generally the result of a misconfigured website or proxy. Only the website or proxy administrator can fix this issue.
->  Error 349 (net::ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION): Multiple distinct Content-Disposition headers received. This is disallowed to protect against HTTP response splitting attacks.
+>  Duplicate headers received from server  
+>  The response from the server contained duplicate headers. This problem is generally the result of a misconfigured website or proxy. Only the website or proxy administrator can fix this issue.  
+>  Error 349 (net::ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION): Multiple distinct Content-Disposition headers received. This is disallowed to protect against HTTP response splitting attacks.  
 
 我仔细检查了我的代码，真的是只添加了一次Content-Disposition header，而根据HTTP response看起来也没有任何问题，而且在Firefox和IE 11下也真的没有问题。
 
 一番搜索发现，因为邮件标题包含逗号`,`，而对于utf-8而言，ASCII字符的值和在utf-8下是相同的，utf-8是对ASCII兼容的，[每个程序员需知道系列](http://www.ruanyifeng.com/blog/2007/10/ascii_unicode_and_utf-8.html)，所以`,`经过utf-8编码后还是一样的。这就会导致文件名中包含`,`，而在[RFC2616](https://www.ietf.org/rfc/rfc2616.txt)中，`,`对于HTTP response header来说是一个分隔符，所以Chrome就会将文件名以`,`分割，造成有多个Content-Disposition的情况。根据[Issue 103618](https://code.google.com/p/chromium/issues/detail?id=103618)来看，Google不打算改变现有的做法。目前只能保证文件名中不出现这些分隔符，可以替换成其它字符。
 
-PS: 期间试过了解下`LMBCS(Lotus Mulit-Btye Character Set)`编码，`LMBCS`最初是Lotus公司在1989年为[`Lotus 1-2-3`](https://en.wikipedia.org/wiki/Lotus_1-2-3)设计的编码格式，支持当时绝大多数语言。你要问为什么不用UTF-8？因为那时UTF-8还没有发明啊。[看了一会](http://web.archive.org/web/20050205225225/http://www.batutis.com/i18n/papers/lmbcs/LMBCS.html)之后，我放弃了，我爱UTF-8!
+PS: 期间试过了解下`LMBCS(Lotus Mulit-Btye Character Set)`编码，`LMBCS`最初是Lotus公司在1989年为[Lotus 1-2-3](https://en.wikipedia.org/wiki/Lotus_1-2-3)设计的编码格式，支持当时绝大多数语言。你要问为什么不用UTF-8？因为那时UTF-8还没有发明啊。[看了一会](http://web.archive.org/web/20050205225225/http://www.batutis.com/i18n/papers/lmbcs/LMBCS.html)之后，我放弃了，我爱UTF-8!

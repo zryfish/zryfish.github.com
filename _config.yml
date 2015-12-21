@@ -9,7 +9,7 @@ title:               知与谁同
 tagline:             '一个人的博客'
 description:         ''
 url:                 http://zryfish.github.io
-baseurl:             'http://zryfish.github.io'
+baseurl:             ''
 paginate:            5
 
 # About/contact
@@ -20,3 +20,9 @@ author:
 
 # Custom vars
 version:             1.0.0
+
+markdown: redcarpet
+highlighter: pygments
+redcarpet:
+    extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "strikethrough", "superscript"]
+
