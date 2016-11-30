@@ -20,7 +20,7 @@ author:
 # Custom vars
 version:             1.0.0
 
-markdown: redcarpet
+markdown: kramdown
 highlighter: pygments
 redcarpet:
     extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "strikethrough", "superscript"]
